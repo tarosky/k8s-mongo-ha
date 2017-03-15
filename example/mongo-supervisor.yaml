@@ -1,0 +1,23 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mongo-supervisor
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mongo-supervisor
+    spec:
+      containers:
+        - name: mongo-supervisor
+          image: tarosky/k8s-mongo-ha:supervisor-1.0.0
+          env:
+            - name: SERVICE
+              value: mongo
+            - name: SERVICE_PORT
+              value: mongo
+            - name: DEBUG
+              value: 'true'

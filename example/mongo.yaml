@@ -1,0 +1,32 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: mongo
+spec:
+  serviceName: mongo
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:3.4.2
+          args:
+            - --smallfiles
+            - --replSet
+            # This value must be equal to the name of corresponding Service.
+            - mongo
+          ports:
+            - containerPort: 27017
+              name: mongo
+          readinessProbe:
+            exec:
+              command: ['mongo', '--eval', 'quit(0)']
+          volumeMounts:
+            - name: mongo-volume
+              mountPath: /data
+      volumes:
+        - name: mongo-volume
+          emptyDir: {}
