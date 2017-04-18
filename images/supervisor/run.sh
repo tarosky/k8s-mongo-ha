@@ -13,12 +13,9 @@ readonly head_domain_pattern="-0.$SERVICE.$namespace.svc.cluster.local"
 run_mongo_task () {
   local -r s="$1"
   local -r count="$2"
-  local -r n="$(statefulset_suffix "$s")"
 
-  cat /task.template.js | \
-    sed "s/%HOST%/$s/g" | \
-    sed "s/%HOST_COUNT%/$count/g" \
-    > /task.js
+  < /task.template.js sed "s/%HOST%/$s/g" | \
+    sed "s/%HOST_COUNT%/$count/g" > /task.js
 
   set +e
   timeout 10 mongo --quiet --host "$s" /task.js
@@ -27,9 +24,8 @@ run_mongo_task () {
 
 run_mongo_init () {
   local -r s="$1"
-  local -r n="$(statefulset_suffix "$s")"
 
-  cat /init.template.js | sed "s/%HOST%/$s/g" > /init.js
+  < /init.template.js sed "s/%HOST%/$s/g" > /init.js
 
   set +e
   timeout 10 mongo --quiet --host "$s" /init.js
@@ -48,13 +44,14 @@ statefulset_suffix () {
 max_suffix () {
   local count="-1"
   for s in $1; do
-    local suffix="$(statefulset_suffix "$s")"
+    local suffix
+    suffix="$(statefulset_suffix "$s")"
     if [ "$count" -lt "$suffix" ]; then
       count="$suffix"
     fi
   done
 
-  local -r wc_count="$(echo "$1" | grep 'svc.cluster.local' | wc -l)"
+  local -r wc_count="$(echo "$1" | grep -c 'svc.cluster.local')"
   local -r suffix_count="$((count + 1))"
   # If the two values are different, it is in a exceptional state.
   # Wait for the state to be steady by exiting.
@@ -87,7 +84,8 @@ main () {
 
   local s
   for s in $servers; do
-    local i="$(run_mongo_task "$s" "$count")"
+    local i
+    i="$(run_mongo_task "$s" "$count")"
     if initialized "$i"; then
       require_init='false'
     fi
