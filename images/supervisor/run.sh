@@ -6,7 +6,8 @@ if [ "$DEBUG" == 'true' ]; then
   set -x
 fi
 
-readonly namespace="$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)"
+namespace="$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)"
+readonly namespace
 readonly service_domain="_$SERVICE_PORT._tcp.$SERVICE.$namespace.svc.cluster.local"
 readonly head_domain_pattern="-0.$SERVICE.$namespace.svc.cluster.local"
 
@@ -51,7 +52,9 @@ max_suffix () {
     fi
   done
 
-  local -r wc_count="$(echo "$1" | grep -c 'svc.cluster.local')"
+  local wc_count
+  wc_count="$(echo "$1" | grep -c 'svc.cluster.local')"
+  readonly wc_count
   local -r suffix_count="$((count + 1))"
   # If the two values are different, it is in a exceptional state.
   # Wait for the state to be steady by exiting.
@@ -74,8 +77,12 @@ invalid_status () {
 }
 
 main () {
-  local -r servers="$(server_domains "$service_domain")"
-  local -r count="$(max_suffix "$servers")"
+  local servers
+  servers="$(server_domains "$service_domain")"
+  readonly servers
+  local count
+  count="$(max_suffix "$servers")"
+  readonly count
 
   local require_init='true'
   if [ "$count" -eq '0' ]; then
@@ -97,7 +104,9 @@ main () {
   # Initialization should be done only when all the nodes are uninitialized
   # and the head node exists.
   if [ "$require_init" = 'true' ]; then
-    local -r head_domain="$(echo "$servers" | grep -- "$head_domain_pattern")"
+    local head_domain
+    head_domain="$(echo "$servers" | grep -- "$head_domain_pattern")"
+    readonly head_domain
     if [ -n "$head_domain" ]; then
       run_mongo_init "$head_domain"
     fi
